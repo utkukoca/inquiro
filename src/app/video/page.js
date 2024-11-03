@@ -21,8 +21,8 @@ export default function Home() {
 
         try {
             // YouTube linkini özetlemek için backend'e gönderiyoruz
-            const response = await axios.post('http://localhost:8081/generateContent', {
-                youtubeLink: youtubeLink.trim() // youtubeLink olarak gönderiyoruz
+            const response = await axios.post('http://localhost:3001/summarize', {
+                videoUrl: youtubeLink.trim() // Backend'e 'videoUrl' olarak gönderiyoruz
             });
 
             // Yanıt geldiğinde özet bilgisini setSummary ile kaydediyoruz ve Card'ı gösteriyoruz
@@ -74,3 +74,4 @@ export default function Home() {
         </div>
     );
 }
+
