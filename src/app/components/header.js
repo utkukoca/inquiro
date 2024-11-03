@@ -11,7 +11,7 @@ import SImage from '../assets/web-development.png';
 export default function Header() {
     return (
         <section className="flex items-center px-10 h-screen mt-10  bg-gray-100">
-            <div className="container mx-auto grid sm:grid-cols-2 mb-10 md:grid-cols-2 grid-cols-2 items-center justify-start lg:px-0">
+            <div className="container mx-auto grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 items-center justify-start lg:px-0">
 
               
                 <div className="grid px-20 text-start">
