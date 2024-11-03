@@ -1,7 +1,6 @@
 // app/api/summarize/route.js
 
 import { YoutubeTranscript } from 'youtube-transcript';
-import { writeFile } from 'fs/promises';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
 
@@ -11,22 +10,16 @@ dotenv.config();
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-async function fetchAndStoreTranscript(videoUrl) {
+async function fetchTranscriptParagraph(videoUrl) {
   try {
-    // YouTube transkriptini al
+    // YouTube transkriptini al ve tüm `text` alanlarını bir paragraf olarak birleştir
     const transcript = await YoutubeTranscript.fetchTranscript(videoUrl);
-    const transcriptData = JSON.stringify(transcript, null, 2);
-
-    // `text` alanlarını birleştirip bir paragraf haline getir
     const paragraph = transcript.map(item => item.text).join(' ');
 
-    // Birleştirilen paragrafı `paragraph.txt` dosyasına kaydet
-    await writeFile('paragraph.txt', paragraph);
-    console.log('Combined paragraph has been saved to paragraph.txt');
-
+    console.log('Transcript combined into paragraph.');
     return paragraph;
   } catch (error) {
-    console.error('Error fetching or storing the transcript:', error);
+    console.error('Error fetching the transcript:', error);
     throw error;
   }
 }
@@ -51,11 +44,12 @@ export async function POST(req) {
       return new Response(JSON.stringify({ error: 'YouTube video URL is required' }), { status: 400 });
     }
 
-    const paragraph = await fetchAndStoreTranscript(videoUrl);
-    const summary = await generateSummary(paragraph);
+    const paragraph = await fetchTranscriptParagraph(videoUrl); // Hafızada paragrafı al
+    const summary = await generateSummary(paragraph); // Hafızada paragrafı özetle
 
     return new Response(JSON.stringify({ summary }), { status: 200 });
   } catch (error) {
+    console.error('Error generating summary:', error);
     return new Response(JSON.stringify({ error: 'Error generating summary' }), { status: 500 });
   }
 }
