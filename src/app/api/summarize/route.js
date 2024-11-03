@@ -1,7 +1,7 @@
 import { YoutubeTranscript } from 'youtube-transcript';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// API istemcisini başlat
+// Google Generative AI istemcisini başlat
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -9,8 +9,10 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 async function fetchTranscriptParagraph(videoUrl) {
   try {
     const transcript = await YoutubeTranscript.fetchTranscript(videoUrl);
+    if (!transcript || !transcript.length) {
+      throw new Error('Transcript not found or empty');
+    }
     const paragraph = transcript.map(item => item.text).join(' ');
-
     console.log('Transcript combined into paragraph.');
     return paragraph;
   } catch (error) {
@@ -24,6 +26,10 @@ async function generateSummary(paragraph) {
   try {
     const prompt = `Summary:\n${paragraph}`;
     const result = await model.generateContent(prompt);
+
+    if (!result.response || !result.response.text) {
+      throw new Error('Invalid response from generative model');
+    }
 
     return result.response.text();
   } catch (error) {
@@ -44,6 +50,7 @@ export async function POST(req) {
       });
     }
 
+    // Transcript paragrafını al ve özetle
     const paragraph = await fetchTranscriptParagraph(videoUrl);
     const summary = await generateSummary(paragraph);
 
@@ -52,7 +59,7 @@ export async function POST(req) {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error('Error processing request:', error.message);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
