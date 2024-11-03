@@ -2,16 +2,36 @@
 "use client";
 
 import React, { useState } from 'react';
+import axios from 'axios';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Navbar from '../components/navbar';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function Home() {
-    const [showCard, setShowCard] = useState(false); // Card durumunu kontrol eden state
+    const [showCard, setShowCard] = useState(false);
+    const [youtubeLink, setYoutubeLink] = useState('');
+    const [summary, setSummary] = useState(''); // Özet bilgisini saklamak için
 
-    const handleButtonClick = () => {
-        setShowCard(true); // Butona tıklandığında Card'ı göster
+    const handleButtonClick = async () => {
+        if (!youtubeLink.trim()) {
+            alert("Lütfen bir YouTube linki yapıştırınız.");
+            return;
+        }
+
+        try {
+            // YouTube linkini özetlemek için backend'e gönderiyoruz
+            const response = await axios.post('http://localhost:8081/generateContent', {
+                youtubeLink: youtubeLink.trim() // youtubeLink olarak gönderiyoruz
+            });
+
+            // Yanıt geldiğinde özet bilgisini setSummary ile kaydediyoruz ve Card'ı gösteriyoruz
+            setSummary(response.data.summary);
+            setShowCard(true);
+        } catch (error) {
+            console.error("Özetleme başarısız oldu:", error);
+            alert("Bir hata oluştu. Lütfen tekrar deneyin.");
+        }
     };
 
     return (
@@ -29,6 +49,8 @@ export default function Home() {
                     <Input
                         placeholder="Buraya YouTube linkini yapıştırınız..."
                         className="w-96 h-12 p-2 border border-gray-300 rounded-md"
+                        value={youtubeLink}
+                        onChange={(e) => setYoutubeLink(e.target.value)}
                     />
                     <Button variant="primary" className="px-6 py-6 text-l" onClick={handleButtonClick}>
                         Gönder
@@ -36,7 +58,7 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* Card bileşeni butona basılınca gösterilir */}
+            {/* Card bileşeni butona basılınca ve yanıt geldikten sonra gösterilir */}
             {showCard && (
                 <div className='px-40 mt-16'>
                     <Card>
@@ -44,7 +66,7 @@ export default function Home() {
                             <CardTitle className='text-xl'>YouTube Konusu</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            PDF2LEARN, PDF formatındaki kitaplarınızı güçlü bir öğrenme aracına dönüştürmek için tasarlanmış bir özellik. Bu araç sayesinde, kitaplarınızdan hızlıca özet çıkarabilir, metin içeriğinden interaktif quiz soruları oluşturabilir ve konuyla ilgili sorular sorarak daha derinlemesine bilgi edinebilirsiniz. PDF2LEARN, karmaşık içerikleri anlaşılır hale getirip öğrenme sürecinizi kolaylaştıran akıllı bir çözüm sunar.
+                            {summary}
                         </CardContent>
                     </Card>
                 </div>
