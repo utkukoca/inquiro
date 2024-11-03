@@ -1,18 +1,13 @@
-// app/api/summarize/route.js
-
 import { YoutubeTranscript } from 'youtube-transcript';
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from 'dotenv';
 
-dotenv.config();
-
-// API istemcisi başlat
+// API istemcisini başlat
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
+// YouTube transkriptini al ve bir paragraf olarak birleştir
 async function fetchTranscriptParagraph(videoUrl) {
   try {
-    // YouTube transkriptini al ve tüm `text` alanlarını bir paragraf olarak birleştir
     const transcript = await YoutubeTranscript.fetchTranscript(videoUrl);
     const paragraph = transcript.map(item => item.text).join(' ');
 
@@ -20,18 +15,20 @@ async function fetchTranscriptParagraph(videoUrl) {
     return paragraph;
   } catch (error) {
     console.error('Error fetching the transcript:', error);
-    throw error;
+    throw new Error('Transcript fetch failed');
   }
 }
 
+// Paragrafı özetle
 async function generateSummary(paragraph) {
   try {
     const prompt = `Summary:\n${paragraph}`;
     const result = await model.generateContent(prompt);
+
     return result.response.text();
   } catch (error) {
     console.error('Error generating summary:', error);
-    throw error;
+    throw new Error('Summary generation failed');
   }
 }
 
@@ -41,15 +38,24 @@ export async function POST(req) {
     const { videoUrl } = await req.json();
 
     if (!videoUrl) {
-      return new Response(JSON.stringify({ error: 'YouTube video URL is required' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'YouTube video URL is required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const paragraph = await fetchTranscriptParagraph(videoUrl); // Hafızada paragrafı al
-    const summary = await generateSummary(paragraph); // Hafızada paragrafı özetle
+    const paragraph = await fetchTranscriptParagraph(videoUrl);
+    const summary = await generateSummary(paragraph);
 
-    return new Response(JSON.stringify({ summary }), { status: 200 });
+    return new Response(JSON.stringify({ summary }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
-    console.error('Error generating summary:', error);
-    return new Response(JSON.stringify({ error: 'Error generating summary' }), { status: 500 });
+    console.error('Error processing request:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
