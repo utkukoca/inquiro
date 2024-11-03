@@ -1,36 +1,26 @@
-// youtube-transcript ve fs/promises modüllerini import edin
+// app/api/summarize/route.js
+
 import { YoutubeTranscript } from 'youtube-transcript';
-import { writeFile, readFile } from 'fs/promises';
-import express from 'express';
+import { writeFile } from 'fs/promises';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from 'dotenv';
-import cors from 'cors';
 
-// .env dosyasındaki verileri al
 dotenv.config();
-
-// express uygulaması oluştur ve CORS'u yapılandır
-const app = express();
-app.use(cors()); // CORS'u tüm isteklere izin verecek şekilde yapılandır
-app.use(express.json());
 
 // API istemcisi başlat
 const genAI = new GoogleGenerativeAI(process.env.API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// Transkript alma ve kaydetme fonksiyonu
 async function fetchAndStoreTranscript(videoUrl) {
   try {
-    // Video transkriptini al
+    // YouTube transkriptini al
     const transcript = await YoutubeTranscript.fetchTranscript(videoUrl);
     const transcriptData = JSON.stringify(transcript, null, 2);
 
-    // Transkripti JSON formatında dosyaya kaydet
-    await writeFile('transcript.json', transcriptData);
-    console.log('Transcript data has been saved to transcript.json');
-
-    // `text` alanlarını birleştirip paragraf dosyasına kaydetme
+    // `text` alanlarını birleştirip bir paragraf haline getir
     const paragraph = transcript.map(item => item.text).join(' ');
+
+    // Birleştirilen paragrafı `paragraph.txt` dosyasına kaydet
     await writeFile('paragraph.txt', paragraph);
     console.log('Combined paragraph has been saved to paragraph.txt');
 
@@ -41,13 +31,9 @@ async function fetchAndStoreTranscript(videoUrl) {
   }
 }
 
-// Özetleme fonksiyonu
 async function generateSummary(paragraph) {
   try {
-    // Prompt metni oluştur
     const prompt = `Summary:\n${paragraph}`;
-
-    // Özetleme isteği gönder
     const result = await model.generateContent(prompt);
     return result.response.text();
   } catch (error) {
@@ -56,23 +42,20 @@ async function generateSummary(paragraph) {
   }
 }
 
-// POST endpoint oluşturma
-app.post('/summarize', async (req, res) => {
-  const { videoUrl } = req.body;
-
-  if (!videoUrl) {
-    return res.status(400).json({ error: 'YouTube video URL is required' });
-  }
-
+// Next.js API Route olarak POST endpoint tanımla
+export async function POST(req) {
   try {
+    const { videoUrl } = await req.json();
+
+    if (!videoUrl) {
+      return new Response(JSON.stringify({ error: 'YouTube video URL is required' }), { status: 400 });
+    }
+
     const paragraph = await fetchAndStoreTranscript(videoUrl);
     const summary = await generateSummary(paragraph);
-    res.json({ summary });
-  } catch (error) {
-    res.status(500).json({ error: 'Error generating summary' });
-  }
-});
 
-// Sunucuyu başlat
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    return new Response(JSON.stringify({ summary }), { status: 200 });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: 'Error generating summary' }), { status: 500 });
+  }
+}

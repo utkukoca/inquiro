@@ -33,7 +33,7 @@ function App() {
     formData.append("file", file);
 
     try {
-      const response = await axios.post("http://localhost:8080/uploadPDF", formData, {
+      const response = await axios.post("/api/uploadPDF", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return response.data.fileUri; // URI'yi döndür
@@ -74,7 +74,7 @@ function App() {
         return;
       }
 
-      const response = await axios.post("http://localhost:8080/askQuestion", {
+      const response = await axios.post("/api/askQuestion", {
         fileUri: currentFileUri,
         prompt,
       });

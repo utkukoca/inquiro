@@ -1,4 +1,3 @@
-// pages/index.js
 "use client";
 
 import React, { useState } from 'react';
@@ -8,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import Navbar from '../components/navbar';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
-export default function Home() {
+export default function VideoPage() {
     const [showCard, setShowCard] = useState(false);
     const [youtubeLink, setYoutubeLink] = useState('');
-    const [summary, setSummary] = useState(''); // Özet bilgisini saklamak için
+    const [summary, setSummary] = useState('');
 
     const handleButtonClick = async () => {
         if (!youtubeLink.trim()) {
@@ -20,12 +19,7 @@ export default function Home() {
         }
 
         try {
-            // YouTube linkini özetlemek için backend'e gönderiyoruz
-            const response = await axios.post('http://localhost:3001/summarize', {
-                videoUrl: youtubeLink.trim() // Backend'e 'videoUrl' olarak gönderiyoruz
-            });
-
-            // Yanıt geldiğinde özet bilgisini setSummary ile kaydediyoruz ve Card'ı gösteriyoruz
+            const response = await axios.post('/api/summarize', { videoUrl: youtubeLink.trim() });
             setSummary(response.data.summary);
             setShowCard(true);
         } catch (error) {
@@ -39,12 +33,10 @@ export default function Home() {
             <Navbar />
 
             <div className="flex flex-col items-center justify-start p-4">
-                {/* Ana Başlık */}
                 <h1 className="text-4xl mt-10 text-center px-44 font-black text-gray-800">
                     Daha az izleyin, daha fazlasını öğrenin ve uzun ders videolarından daha hızlı yararlanın
                 </h1>
 
-                {/* Input ve Button */}
                 <div className="flex mt-10 items-center gap-4">
                     <Input
                         placeholder="Buraya YouTube linkini yapıştırınız..."
@@ -58,7 +50,6 @@ export default function Home() {
                 </div>
             </div>
 
-            {/* Card bileşeni butona basılınca ve yanıt geldikten sonra gösterilir */}
             {showCard && (
                 <div className='px-40 mt-16'>
                     <Card>
@@ -74,4 +65,3 @@ export default function Home() {
         </div>
     );
 }
-
